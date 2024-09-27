@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Device ID and Browser Type</title>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+      }
+
+      p {
+        margin: 30px 0;
+      }
+
+      table {
+        margin: 0;
+        padding: 0;
+      }
+
+      td {
+        margin: 0;
+        padding: 0;
+        border: 1px solid black;
+        width: 100px;
+        height: 100px;
+        text-align: center;
+      }
+
+      button {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+
+    <script>
+      const numberOfRows = 4;
+      let currentPlayer = "O";
+
+      window.onload = function () {
+        createTable();
+        changePlayingPlayerText();
+      };
+
+      function createTable() {
+        const table = document.getElementById("table");
+        table.style.width = `${numberOfRows * 100}px`;
+        table.style.height = `${numberOfRows * 100}px`;
+
+        let dataIndex = 1;
+
+        for (let i = 0; i < numberOfRows; i++) {
+          const row = document.createElement("tr");
+
+          for (let j = 0; j < numberOfRows; j++) {
+            const cell = document.createElement("td");
+            cell.setAttribute("data-index", dataIndex);
+
+            cell.onclick = function () {
+              handleClick(this.getAttribute("data-index"));
+            };
+
+            dataIndex += 1;
+            row.appendChild(cell);
+          }
+
+          table.appendChild(row);
+        }
+      }
+
+      function changePlayingPlayerText() {
+        const string = `It is ${currentPlayer}'s chance`;
+        document.getElementById("current-player").innerText = string;
+      }
+
+      function getCell(cellIndex) {
+        const cell = document.querySelector(`td[data-index='${cellIndex}']`);
+        return cell;
+      }
+
+      function checkForExistingEntry(cellIndex) {
+        const cell = getCell(cellIndex);
+        return cell.innerText !== "";
+      }
+
+      function getVerticallyUpNeighbours(index, arr) {
+        while (1) {
+          if (index - numberOfRows <= 0) {
+            break;
+          }
+          index -= numberOfRows;
+          arr.push(index);
+        }
+      }
+
+      function getVerticallyDownNeighbours(index, arr) {
+        while (1) {
+          if (index + numberOfRows > Math.pow(numberOfRows, 2)) {
+            break;
+          }
+          index += numberOfRows;
+          arr.push(index);
+        }
+      }
+
+      function getHorizontallyLeftNeighbours(index, arr) {
+        while (1) {
+          if (index % numberOfRows === 1) {
+            break;
+          }
+
+          index -= 1;
+          arr.push(index);
+        }
+      }
+
+      function getHorizontallyRightNeighbours(index, arr) {
+        while (1) {
+          if (index % numberOfRows === 0) {
+            break;
+          }
+
+          index += 1;
+          arr.push(index);
+        }
+      }
+
+      function getLeftDiagonalNeighbours(index, arr) {
+        const original = index;
+        while (1) {
+          if (index <= 1) {
+            break;
+          }
+
+          index -= numberOfRows + 1;
+          arr.push(index);
+        }
+
+        index = original;
+
+        while (1) {
+          if (index >= Math.pow(numberOfRows, 2)) {
+            break;
+          }
+
+          index += numberOfRows + 1;
+          arr.push(index);
+        }
+      }
+
+      function getRightDiagonalNeighbours(index, arr) {
+        const original = index;
+        while (1) {
+          if (index <= numberOfRows) {
+            break;
+          }
+
+          index -= numberOfRows - 1;
+          arr.push(index);
+        }
+
+        index = original;
+
+        while (1) {
+          if (index >= numberOfRows * (numberOfRows - 1) + 1) {
+            break;
+          }
+
+          index += numberOfRows - 1;
+          arr.push(index);
+        }
+      }
+
+      function checkIfCellExistsOnLeftDiagonal(index) {
+        let check = false;
+        if (index === 1 || index === Math.pow(numberOfRows, 2)) {
+          return true;
+        }
+        while (1) {
+          if (index <= 1) {
+            break;
+          }
+
+          index -= numberOfRows + 1;
+          if (index === 1) {
+            check = true;
+          }
+        }
+
+        return check;
+      }
+
+      function checkIfCellExistsOnRightDiagonal(index) {
+        let check = false;
+        if (index === Math.pow(numberOfRows, 2)) {
+          return false;
+        }
+        if (
+          index === numberOfRows ||
+          index === numberOfRows * (numberOfRows - 1) - 1
+        ) {
+          return true;
+        }
+        while (1) {
+          if (index <= numberOfRows) {
+            break;
+          }
+
+          index -= numberOfRows - 1;
+          if (index === numberOfRows) {
+            check = true;
+          }
+        }
+
+        return check;
+      }
+
+      function calculateNeighbours(cellIndex) {
+        const isCenterGridCell = !(
+          cellIndex % numberOfRows === 0 || cellIndex % numberOfRows === 1
+        );
+
+        const verticalNeighbours = [Number(cellIndex)],
+          horizontalNeighbours = [Number(cellIndex)],
+          leftDiagonalNeighbours = [Number(cellIndex)],
+          rightDiagonalNeighbours = [Number(cellIndex)];
+        entries = [];
+
+        let refferrerIndex = Number(cellIndex);
+
+        const row =
+          refferrerIndex % numberOfRows === 0
+            ? refferrerIndex / numberOfRows
+            : parseInt(refferrerIndex / numberOfRows) + 1;
+
+        const isCenterRow = row > 1 && row < numberOfRows;
+
+        const isOnLeftDiagonal =
+          checkIfCellExistsOnLeftDiagonal(refferrerIndex);
+        refferrerIndex = Number(cellIndex);
+        const isOnRightDiagonal =
+          checkIfCellExistsOnRightDiagonal(refferrerIndex);
+        refferrerIndex = Number(cellIndex);
+
+        if (isCenterRow) {
+          getVerticallyUpNeighbours(refferrerIndex, verticalNeighbours);
+          refferrerIndex = Number(cellIndex);
+          getVerticallyDownNeighbours(refferrerIndex, verticalNeighbours);
+          refferrerIndex = Number(cellIndex);
+          getHorizontallyLeftNeighbours(refferrerIndex, horizontalNeighbours);
+          refferrerIndex = Number(cellIndex);
+          getHorizontallyRightNeighbours(refferrerIndex, horizontalNeighbours);
+          refferrerIndex = Number(cellIndex);
+
+          if (isOnLeftDiagonal) {
+            getLeftDiagonalNeighbours(refferrerIndex, leftDiagonalNeighbours);
+            refferrerIndex = Number(cellIndex);
+          }
+          if (isOnRightDiagonal) {
+            getRightDiagonalNeighbours(refferrerIndex, rightDiagonalNeighbours);
+            refferrerIndex = Number(cellIndex);
+          }
+        } else {
+          if (row === 1) {
+            getVerticallyDownNeighbours(refferrerIndex, verticalNeighbours);
+            refferrerIndex = Number(cellIndex);
+          }
+          if (row === numberOfRows) {
+            getVerticallyUpNeighbours(refferrerIndex, verticalNeighbours);
+            refferrerIndex = Number(cellIndex);
+          }
+
+          if (isOnLeftDiagonal) {
+            getLeftDiagonalNeighbours(refferrerIndex, leftDiagonalNeighbours);
+            refferrerIndex = Number(cellIndex);
+          }
+          if (isOnRightDiagonal) {
+            getRightDiagonalNeighbours(refferrerIndex, rightDiagonalNeighbours);
+            refferrerIndex = Number(cellIndex);
+          }
+        }
+
+        const verticalEntries = [],
+          horizontalEntries = [],
+          leftDiagonalEntries = [],
+          rightDiagonalEntries = [];
+
+        for (const entry of verticalNeighbours.filter((e) => e !== cellIndex)) {
+          const cellData = getCell(entry).innerText;
+          verticalEntries.push(cellData);
+        }
+
+        for (const entry of horizontalNeighbours.filter(
+          (e) => e !== cellIndex
+        )) {
+          const cellData = getCell(entry).innerText;
+          horizontalEntries.push(cellData);
+        }
+
+        if (isOnLeftDiagonal) {
+          for (const entry of leftDiagonalNeighbours.filter(
+            (e) => e !== cellIndex
+          )) {
+            const cellData = getCell(entry).innerText;
+            leftDiagonalEntries.push(cellData);
+          }
+        }
+
+        if (isOnRightDiagonal) {
+          for (const entry of rightDiagonalNeighbours.filter(
+            (e) => e !== cellIndex
+          )) {
+            const cellData = getCell(entry).innerText;
+            rightDiagonalEntries.push(cellData);
+          }
+        }
+
+        if (
+          (verticalEntries.filter(Boolean).length === numberOfRows &&
+            verticalEntries.filter((e) => e === currentPlayer).length ===
+              numberOfRows) ||
+          (horizontalEntries.filter(Boolean).length === numberOfRows &&
+            horizontalEntries.filter((e) => e === currentPlayer).length ===
+              numberOfRows) ||
+          (leftDiagonalEntries.filter(Boolean).length === numberOfRows &&
+            leftDiagonalEntries.filter((e) => e === currentPlayer).length ===
+              numberOfRows) ||
+          (rightDiagonalEntries.filter(Boolean).length === numberOfRows &&
+            rightDiagonalEntries.filter((e) => e === currentPlayer).length ===
+              numberOfRows)
+        ) {
+          document.getElementById(
+            "win-text"
+          ).innerText = `${currentPlayer} wins`;
+
+          new Array(Math.pow(numberOfRows, 2)).forEach((_, index) => {
+            console.log("innnnnn");
+            const cell = getCell(index + 1);
+            console.log("cell", cell);
+            cell.style.cursor = "not-allowed";
+            cell.style.background = "#eee";
+          });
+          createTable();
+        }
+      }
+
+      function handleClick(cellIndex) {
+        if (checkForExistingEntry(cellIndex)) {
+          return;
+        }
+
+        const cell = getCell(cellIndex);
+        cell.innerText = currentPlayer;
+        cell.style.background = "#eee";
+        cell.style.cursor = "not-allowed";
+
+        calculateNeighbours(cellIndex);
+
+        if (currentPlayer === "O") {
+          currentPlayer = "X";
+        } else {
+          currentPlayer = "O";
+        }
+
+        changePlayingPlayerText();
+      }
+    </script>
+  </head>
+
+  <body>
+    <p id="current-player"></p>
+    <table id="table"></table>
+    <p id="win-text"></p>
+  </body>
+</html>
